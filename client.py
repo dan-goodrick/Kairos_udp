@@ -3,7 +3,7 @@ import sys
 
 # Create a UDP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('localhost', 10000)
+server_address = (192.168.0.10, 10000)
 message = 'This is a UDP packet'
 
 try:
