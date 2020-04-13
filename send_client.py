@@ -1,15 +1,43 @@
+# import socket
+# import sys
+#
+# message = sys.argv[1]
+# # Create a UDP socket
+# sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# server_address = ('localhost', 7201)
+#
+#
+# # Send data
+# print(f"Sending {message}")
+# sent = sock.sendto(message.encode(), server_address)
+# print(sent)
+# print(f"closing socket")
+# sock.close()
+
 import socket
-import sys
 
-message = sys.argv[1]
-# Create a UDP socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('DESKTOP-5CQ9HJ5', 9000)
+from twisted.internet.protocol import DatagramProtocol
+from twisted.internet import reactor
 
 
-# Send data
-print(f"Sending {message}")
-sent = sock.sendto(message.encode(), server_address)
-print(sent)
-print(f"closing socket")
-sock.close()
+class Echo(DatagramProtocol):
+    def datagramReceived(self, data, addr):
+        print("received %r from %s" % (data, addr))
+        self.transport.write(data, addr)
+
+
+# Create new socket that will be passed to reactor later.
+portSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+# Make the port non-blocking and start it listening.
+portSocket.setblocking(False)
+portSocket.bind(('127.0.0.1', 9999))
+
+# Now pass the port file descriptor to the reactor.
+port = reactor.adoptDatagramPort(
+    portSocket.fileno(), socket.AF_INET, Echo())
+
+# The portSocket should be cleaned up by the process that creates it.
+portSocket.close()
+
+reactor.run()
