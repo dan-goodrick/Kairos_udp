@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-
-# Copyright (c) Twisted Matrix Laboratories.
-# See LICENSE for details.
-
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
 
-# Here's a UDP version of the simplest possible protocol
 class ServeUDP(DatagramProtocol):
+    '''
+    Listens on a port for messages
+    If found, it decodes the message
+    Updates values in the gui
+    '''
     def datagramReceived(self, datagram, address):
         self.datagram = datagram
         print(self.datagram)
