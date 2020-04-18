@@ -198,7 +198,7 @@ def ParseStreamingUDP(msg):
     strminDict['Valid'] = valid
     return strminDict
 
-def BuildStreamingUDP(itype, SelectedName, strmoutDict):
+def BuildStreamingUDP(strmDict):
     #   Streaming Protocol Sample
     #   #|1.0|VEH_MHAFB1|CMD|123|45|56837|S,0|A,0|B,100|G,1|V,0|X,0,1,0,0,0,,,|Y,0,0,0,0,0,,,|Z,0,0,0,,,,,|C,XXX
     #   0   #                   Header
@@ -219,59 +219,44 @@ def BuildStreamingUDP(itype, SelectedName, strmoutDict):
     #   14  Vehicle Mode        Progressive Steering, Progressive Braking, No Speed Control
     #   15  XXX                 Default Checksum
 
-    Session = strmoutDict['Session']
-    Sequence = int(strmoutDict['Sequence'])
     TimeStamp = int((time.time() - time.mktime(date.today().timetuple()))*1000)
-    VehicleName = strmoutDict['Name']
-    Steering = strmoutDict['Steering']
-    Throttle = strmoutDict['Throttle']
-    Brake = strmoutDict['Brake']
-    Trans = strmoutDict['Trans']
-    Velocity = strmoutDict['Velocity']
-    State = strmoutDict['State']
-    Process = strmoutDict['Process']
-    Mode = strmoutDict['Mode']
     msg = []
     msg.append('#') # Header
     msg.append('1.0') # Version
-    if itype:
-        msg.append(VehicleName) # Where is VehicleName defined???
-        msg.append('STS') # Message Type
-    else:
-        msg.append(SelectedName) # Vehicle Name
-        msg.append('CMD') # Message Type
-    msg.append(str(Session))
-    msg.append(str(Sequence+1))
+    msg.append(strmDict['Name']) # Vehicle Name
+    msg.append(strmDict['Type']) # Message Type
+    msg.append(str(strmDict['Session'])) #Session ID
+    msg.append(str(strmDict['Sequence'])) #Message Number
     msg.append(str(TimeStamp))
-    msg.append(','.join(['S', str(Steering)]))
-    msg.append(','.join(['A', str(Throttle)]))
-    msg.append(','.join(['B', str(Brake)]))
-    msg.append(','.join(['G', str(Trans)]))
-    msg.append(','.join(['V', str(Velocity)]))
-    msg.append(','.join(['X', str(State['Estop']),
-                              str(State['Paused']),
-                              str(State['Manual']),
-                              str(State['Enable']),
-                              str(State['L1']),
-                              str(State['L2']),
-                              str(State['Motion']),
-                              str(State['Reserved7'])]))
-    msg.append(','.join(['Y',str(Process['Operation']),
-                             str(Process['Shutdown']),
-                             str(Process['Start']),
-                             str(Process['SteeringCal']),
-                             str(Process['TransShift']),
-                             str(Process['Reserved5']),
-                             str(Process['Reserved6']),
-                             str(Process['Reserved7'])]))
-    msg.append(','.join(['Z',str(Mode['ProgressiveSteeringDisable']),
-                             str(Mode['ProgressiveBrakingDisable']),
-                             str(Mode['VelocityControlEnable']),
-                             str(Mode['Reserved3']),
-                             str(Mode['Reserved4']),
-                             str(Mode['Reserved5']),
-                             str(Mode['Reserved6']),
-                             str(Mode['Reserved7'])]))
+    msg.append(','.join(['S', str(strmDict['Steering'])]))
+    msg.append(','.join(['A', str(strmDict['Throttle'])]))
+    msg.append(','.join(['B', str(strmDict['Brake'])]))
+    msg.append(','.join(['G', str(strmDict['Trans'])]))
+    msg.append(','.join(['V', str(strmDict['Velocity'])]))
+    msg.append(','.join(['X', str(strmDict['State_Estop']),
+                              str(strmDict['State_Paused']),
+                              str(strmDict['State_Manual']),
+                              str(strmDict['State_Enable']),
+                              str(strmDict['State_L1']),
+                              str(strmDict['State_L2']),
+                              str(strmDict['State_Motion']),
+                              str(strmDict['State_Reserved7'])]))
+    msg.append(','.join(['Y',str(strmDict['Process_Operation']),
+                             str(strmDict['Process_Shutdown']),
+                             str(strmDict['Process_Start']),
+                             str(strmDict['Process_SteeringCal']),
+                             str(strmDict['Process_TransShift']),
+                             str(strmDict['Process_Reserved5']),
+                             str(strmDict['Process_Reserved6']),
+                             str(strmDict['Process_Reserved7'])]))
+    msg.append(','.join(['Z',str(strmDict['Mode_ProgressiveSteeringDisable']),
+                             str(strmDict['Mode_ProgressiveBrakingDisable']),
+                             str(strmDict['Mode_VelocityControlEnable']),
+                             str(strmDict['Mode_Reserved3']),
+                             str(strmDict['Mode_Reserved4']),
+                             str(strmDict['Mode_Reserved5']),
+                             str(strmDict['Mode_Reserved6']),
+                             str(strmDict['Mode_Reserved7'])]))
     chk = get_checksum('|'.join(msg))
     msg.append(','.join(['C',str(chk)]))
     return '|'.join(msg)
