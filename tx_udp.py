@@ -44,10 +44,10 @@ class GUI():
         self.app = tk.Frame(self.root)
         self.app.grid()
         self.state = tk.StringVar()
-        self.state.set("Start UDP") # initial Button text
+        self.state.set("Start Sending") # initial Button text
         self.button = tk.Checkbutton(self.root,
-                                     onvalue="Stop UDP",
-                                     offvalue="Start UDP",
+                                     onvalue="Stop Sending",
+                                     offvalue="Start Sending",
                                      indicatoron=False,
                                      variable=self.state, #enables var.get
                                      textvariable=self.state, #prints onvalue/offvalue on button
@@ -105,9 +105,10 @@ class GUI():
 
     def send_message(self):
         if self.running:
-            print (f"IP: {self.ip}")
-            print (f"Port: {self.port}")
-            print (f"Freq: {self.freq}")
+            self.strmDict['Sequence']=int(self.strmDict['Sequence']) + 1
+            self.dict_fields['Sequence'].delete(0, tk.END)
+            self.dict_fields['Sequence'].insert(0, self.strmDict['Sequence'])
+            self.build_msg()
             sock = socket.socket(socket.AF_INET, # Internet
                                  socket.SOCK_DGRAM) # UDP
             sock.sendto(self.msg.encode(), (self.ip, self.port))
@@ -140,8 +141,11 @@ class GUI():
         self.freq_label['font'] = font.Font(weight='bold')
 
     def toggle(self):
-        if self.state.get() == "Stop UDP":
+        if self.state.get() == "Stop Sending":
             print("turning on...")
+            print (f"IP: {self.ip}")
+            print (f"Port: {self.port}")
+            print (f"Freq: {self.freq}")
             self.running = True
             self.update_params()
             self.build_msg()
@@ -196,11 +200,4 @@ if __name__ == "__main__":
             'TimeStamp': '56837',
             'Valid': True,
             }
-
     window = GUI(strmDict)
-        # if itype:
-        #     msg.append(VehicleName) # Where is VehicleName defined???
-        #     msg.append('STS') # Message Type
-        # else:
-        #     msg.append(SelectedName) # Vehicle Name
-        #     msg.append('CMD') # Message Type
