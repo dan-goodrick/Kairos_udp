@@ -157,42 +157,42 @@ def ParseStreamingUDP(msg):
     #break out the state parameters
     state_list = parsed_UDP_msg[12].split(',')
     if state_list.pop(0) == 'X':
-        strminDict['State'] ={'Estop':state_list[0],
-                              'Paused':state_list[1],
-                              'Enable':state_list[2],
-                              'Manual':state_list[3],
-                              'L1':state_list[4],
-                              'L2':state_list[5],
-                              'Motion':state_list[6],
-                              'Reserved7':state_list[7]}
+        strminDict['State_Estop'] = state_list[0]
+        strminDict['State_Paused'] = state_list[1]
+        strminDict['State_Enable'] = state_list[2]
+        strminDict['State_Manual'] = state_list[3]
+        strminDict['State_L1'] = state_list[4]
+        strminDict['State_L2'] = state_list[5]
+        strminDict['State_Motion'] = state_list[6]
+        strminDict['State_Reserved7'] = state_list[7]
     else:
         valid = False
 
     #break out the process parameters
     process_list = parsed_UDP_msg[13].split(',')
     if process_list.pop(0) == 'Y':
-        strminDict['Process'] ={'Operation':process_list[0],
-                                'Shutdown':process_list[1],
-                                'Start':process_list[2],
-                                'SteeringCal':process_list[3],
-                                'TransShift':process_list[4],
-                                'Reserved5':process_list[5],
-                                'Reserved6':process_list[6],
-                                'Reserved7':process_list[7]}
+        strminDict['Process_Operation']=process_list[0]
+        strminDict['Process_Shutdown']=process_list[1]
+        strminDict['Process_Start']=process_list[2]
+        strminDict['Process_SteeringCal']=process_list[3]
+        strminDict['Process_TransShift']=process_list[4]
+        strminDict['Process_Reserved5']=process_list[5]
+        strminDict['Process_Reserved6']=process_list[6]
+        strminDict['Process_Reserved7']=process_list[7]
     else:
         valid = False
 
     #break out the mode parameters
     mode_list = parsed_UDP_msg[14].split(',')
     if mode_list.pop(0) == 'Z':
-        strminDict['Mode'] ={'ProgressiveSteeringDisable':mode_list[0],
-                             'ProgressiveBrakingDisable':mode_list[1],
-                             'VelocityControlEnable':mode_list[2],
-                             'Reserved3':mode_list[3],
-                             'Reserved4':mode_list[4],
-                             'Reserved5':mode_list[5],
-                             'Reserved6':mode_list[6],
-                             'Reserved7':mode_list[7]}
+        strminDict['Mode_ProgressiveSteeringDisable']=mode_list[0]
+        strminDict['Mode_ProgressiveBrakingDisable']=mode_list[1]
+        strminDict['Mode_VelocityControlEnable']=mode_list[2]
+        strminDict['Mode_Reserved3']=mode_list[3]
+        strminDict['Mode_Reserved4']=mode_list[4]
+        strminDict['Mode_Reserved5']=mode_list[5]
+        strminDict['Mode_Reserved6']=mode_list[6]
+        strminDict['Mode_Reserved7']=mode_list[7]
     else:
         valid = False
     strminDict['Valid'] = valid
@@ -268,7 +268,6 @@ def main():
     #     print(f"{port} is not a valid port.  Exiting...")
     type = 0
     if not type:
-        msg = '#|1.0|VEH_MHAFB1|CMD|123|45|56837|S,0|A,0|B,100|G,1|V,0|X,0,1,0,0,0,,,|Y,0,0,0,0,0,,,|Z,0,0,0,,,,,|C,XXX'
         strmDict = ParseStreamingUDP(msg)
     type = input("Enter a 1 to build a server or 2 to make a client")
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -278,7 +277,6 @@ def main():
         reactor.listenUDP(port, Serve_UDP())
         reactor.run()
         strmDict = ParseStreamingUDP(msg)
-        pprint(strmDict)
     elif type == '2':
         ip = input('Enter IP Address (xxx.xxx.xxx): ')
         if not valid_IP(ip):
@@ -293,5 +291,9 @@ def main():
         print(f"{type} is not a valid option. Exiting...")
 
 if __name__ == "__main__":
+    from pprint import pprint
     msg = '#|1.0|VEH_MHAFB1|CMD|123|45|56837|S,0|A,0|B,100|G,1|V,0|X,0,1,0,0,0,,,|Y,0,0,0,0,0,,,|Z,0,0,0,,,,,|C,XXX'
-    main()
+    print(msg)
+    strmDict = ParseStreamingUDP(msg)
+    print(strmDict)
+    print(BuildStreamingUDP(strmDict))

@@ -29,6 +29,7 @@ class GUI():
         self.ip = '127.0.0.1'
         self.port = 7200
         self.root = tk.Tk()
+        self.root.protocol('WM_DELETE_WINDOW', self.quit)
         self.build_frame()
         self.configure_params()
         self.configure_msg()
@@ -134,7 +135,7 @@ class GUI():
 
 
     def build_msg(self):
-        self.msg = BuildStreamingUDP(strmDict)
+        self.msg = BuildStreamingUDP(self.strmDict)
         row = self.quit_button.grid_info()['row'] + 1
         self.freq_label = tk.Label(self.root,text=f"Message:{self.msg}", anchor="e", width=self.w*4 )
         self.freq_label.grid(columnspan = 4, sticky = tk.W+tk.E, row=row)

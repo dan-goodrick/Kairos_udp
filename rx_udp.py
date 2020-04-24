@@ -1,118 +1,97 @@
 import tkinter as tk
 from tkinter import font
-from collections import defaultdict
-# from mStreamingUDP import BuildStreamingUDP
+from mStreamingUDP import ParseStreamingUDP
 from twisted.internet import tksupport, reactor
 from twisted.internet.protocol import DatagramProtocol
 
-msg = ''
 class RX(DatagramProtocol):
-    '''
-    Listens on a port for messages
-    If found, it decodes the message
-    Updates values in the gui
-    '''
-    #How do I get this out of here?
+    def __init__(self, widget):
+        super().__init__()
+        self.widget = widget
+        self.params = {}
+
     def datagramReceived(self, datagram, address):
-        global msg
-        msg = datagram.decode('utf-8')
-        self.transport.write(datagram, address)
+        self.msg = datagram.decode('utf-8')
+        self.widget.set(self.msg)  # update the label
+        # print(self.params)
+        #self.transport.write(datagram, address)  # cause recursive issue
 
-class GUI():
-    def __init__(self, strmDict):
-        self.listening = False
-        self.w = 40
-        self.port = 7200
+class RX_GUI():
+    def __init__(self, msg_dict):
+        self.width = 15
         self.root = tk.Tk()
-        self.freq = 10
+        self.root.protocol('WM_DELETE_WINDOW', self.quit)
+        self.init_params(msg_dict)
+        self.configure_port()
+        # self.start_button()
+        self.show_params()
         tksupport.install(self.root)
-        # self.reactor = reactor.listenUDP(self.port, RX())
-        self.build_frame()
-        self.configure_UDP()
-        self.quit_button = tk.Button(self.root,text="Exit",command=self.quit)
-        self.quit_button.grid(columnspan = 2, sticky = tk.W+tk.E, row=7)
-        self.quit_button['font'] = font.Font(size=16, weight='bold')
+        self.quit_button()
         reactor.run()
-        self.root.after(self.freq, self.show_message)
-        self.root.mainloop()
 
-    def build_frame(self):
-        self.root.title("Listen for UDP Messages")
-        self.app = tk.Frame(self.root)
-        self.app.grid()
-        self.state = tk.StringVar()
-        self.state.set("Start Listening") # initial Button text
-        self.button = tk.Checkbutton(self.root,
-                                     onvalue="Stop Listening",
-                                     offvalue="Start Listening",
-                                     indicatoron=False,
-                                     variable=self.state, #enables var.get
-                                     textvariable=self.state, #prints onvalue/offvalue on button
-                                     command=self.toggle)
-        self.button.grid(column=0, columnspan=2, row=0, sticky = tk.W+tk.E,)
-        self.button['font'] = font.Font(size=20, weight='bold')
-
-
-    def configure_UDP(self):
-        self.port_label = tk.Label(self.root,text="Port #:", anchor="e", width=self.w )
-        self.port_label.grid(column=0, sticky = tk.E, row=2)
+    def configure_port(self):
+        self.port_label = tk.Label(self.root,text="Enter Port #:", width=self.width )
+        self.port_label.grid(column=0,  sticky = tk.E, row=1)
         self.port_label['font'] = font.Font(weight='bold')
-        self.port_field = tk.Entry(self.root,width=self.w )
-        self.port_field.insert(tk.END, self.port)
-        self.port_field.grid(column=1, sticky = tk.W, row=2)
+        self.port_field = tk.Entry(self.root,width=self.width)
+        self.port_field.grid(column=1, sticky = tk.W, row=1)
+        self.port_field.insert(tk.END, '7200')
+        self.msg = tk.StringVar()
+        self.msg.set('')
+        self.button = tk.Button(self.root, text="Start Listening",
+                                command=self.start_listening, bg='green')
+        self.button.grid(column=3, columnspan=2, row=1)
 
-        self.freq_label = tk.Label(self.root,text="Message Frequency (ms):", anchor="e", width=self.w )
-        self.freq_label.grid(column=0, sticky = tk.E, row=3)
-        self.freq_label['font'] = font.Font(weight='bold')
-        self.freq_field = tk.Entry(self.root,width=self.w )
-        self.freq_field.insert(tk.END, self.freq)
-        self.freq_field.grid(column=1, sticky = tk.W, row=3)
+    def start_listening(self):
+        self.rx_port = reactor.listenUDP(int(self.port_field.get()), RX(self.msg))
 
+    def quit_button(self):
+        self.quit_button = tk.Button(self.root,text="Exit",command=self.quit)
+        self.quit_button.grid(columnspan = 4, sticky = tk.W+tk.E)
+        self.quit_button['font'] = font.Font(size=16, weight='bold')
+
+    def show_params(self, param_cnt=34):
         l = tk.Label(self.root,text=f"Message Parameters:" )
-        l['font'] = font.Font(weight='bold', underline=2)
-        l.grid(columnspan = 4, sticky = tk.W+tk.E,row=5)
+        l['font'] = font.Font(weight='bold', underline=1)
+        l.grid(columnspan = 4, sticky = tk.W+tk.E,row=3)
 
-    def show_message(self):
-        global msg
-        if self.listening:
-            self.msg = tk.Label(self.root,text=msg, anchor="w", width=self.w*2 )
-            self.msg.grid(column=0, columnspan=2, sticky = tk.W, row=6)
-            self.root.after(1000, self.show_message)
+        self.msg_lbl = tk.Label(self.root, textvariable=self.msg)
+        self.msg_lbl.grid(row=4, columnspan=4)
+        self.msg.trace('w', self.parse_msg)
 
-    def update_params(self):
-        if self.port_field.get().isnumeric():
-            self.port = int(self.port_field.get())
-        if self.freq_field.get().isnumeric():
-            self.freq = int(self.freq_field.get())
+    def init_params(self, msg_dict):
+        self.labels = {}
+        self.params = {}
+        for key in msg_dict:
+            if 'Reserved' in key:
+                continue
+            self.params[key] = tk.StringVar()
+            self.params[key].set('')
+            self.labels[key] = [tk.Label(self.root, text=f"{key}:"),
+                                tk.Label(self.root, textvariable=self.params[key])]
 
-    def toggle(self):
-        if self.state.get() == "Stop Listening":
-            print("Listening...")
-            self.listening = True
-            # self.reactor.startListening()
-            self.reactor = reactor.listenUDP(self.port, RX())
-            self.update_params()
-            self.show_message()
-            # self.datagramReceived()
-        else:
-            print("turning off...")
-            self.listening = False
-            self.reactor.stopListening()
-            # self.configure_UDP()
-            # self.root.reactor('WM_DELETE_WINDOW', reactor.stop)
-
+    def parse_msg(self, *args):
+        param_cnt=len(self.params)
+        parsed_msg = ParseStreamingUDP(self.msg.get())
+        row_offset = 6
+        row = 0
+        for key in self.params:
+            row_num = row_offset + int(row%(param_cnt//2))
+            col = int(row//(param_cnt//2))*2
+            row+=1
+            self.params[key].set(parsed_msg[key])
+            self.labels[key][0].grid(column = col, row=row_num)
+            self.labels[key][1].grid(column = col+1, row=row_num)
 
     def quit(self):
         reactor.stop()
         self.root.destroy()
 
-
 if __name__ == "__main__":
     strmDict = {
             'Version': '1.0',
             'Type': 'CMD',
-            'VehicleName':'VehicleName',
-            'SelectedName': 'SelectedName',
+            'Name': '',
             'Session': '123',
             'Sequence': '45',
             'Steering': 0,
@@ -145,20 +124,7 @@ if __name__ == "__main__":
             'Mode_Reserved6': '',
             'Mode_Reserved7': '',
             'Checksum': 'XXX',
-            'Name': '',
             'TimeStamp': '56837',
             'Valid': True,
             }
-    window = GUI(strmDict)
-
-# UDP_IP = "127.0.0.1"
-# UDP_PORT = 7200
-#
-# sock = socket.socket(socket.AF_INET, # Internet
-#                      socket.SOCK_DGRAM) # UDP
-# sock.bind((UDP_IP, UDP_PORT))
-#
-# while True:
-#     data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-#     print ("received message:", data)
-# (Pdb) self.reactor.reactor.running = True or False
+RX_GUI(strmDict)
