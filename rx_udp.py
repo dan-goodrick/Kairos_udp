@@ -43,6 +43,7 @@ class RX_GUI():
         self.button.grid(column=3, columnspan=2, row=1)
 
     def start_listening(self):
+        self.button.destroy()
         self.rx_port = reactor.listenUDP(int(self.port_field.get()), RX(self.msg))
 
     def quit_button(self):

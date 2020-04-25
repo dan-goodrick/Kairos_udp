@@ -1,47 +1,6 @@
 #!/usr/bin/env python
-import socket
-from pprint import pprint
 from datetime import date
 import time
-from twisted.internet.protocol import DatagramProtocol
-from twisted.internet import reactor, protocol, task
-
-class Serve_UDP(DatagramProtocol):
-    def __init__(self):
-        self.datagram = None
-
-    def return_msg(self):
-        return self.datagram
-
-    def datagramReceived(self, datagram, address):
-        self.datagram = datagram
-        self.transport.write(datagram, address)
-
-class Client_UDP(protocol.DatagramProtocol):
-    def __init__(self, host, port, reactor):
-        self.host = host
-        self.port = port
-        self._reactor = reactor
-
-    def startProtocol(self):
-        self.transport.connect(self.host, self.port)
-
-    def stopProtocol(self):
-        #on disconnect
-        self._reactor.listenUDP(0, self)
-
-    def sendDatagram(self, datagram):
-        # datagram = 'Hello world'.encode() #ntp_packet
-        try:
-            self.transport.write(datagram.encode(), (self.host, self.port))
-            # print( "{:0.6f}".format(time.time()))
-        except Exception as e:
-            print(e)
-            pass
-
-    def datagramReceived(self, datagram, host):
-        print('Datagram received: ', repr(datagram))
-        pass
 
 def get_checksum(string, num_digits=3):
     return abs(hash(string)) % (10 ** num_digits)
@@ -261,39 +220,3 @@ def BuildStreamingUDP(strmDict):
     msg.append(','.join(['C',str(chk)]))
     return '|'.join(msg)
 
-def main():
-
-    # port = int(input('Enter port #: '))
-    # if port < 1000 or port > 9000:
-    #     print(f"{port} is not a valid port.  Exiting...")
-    type = 0
-    if not type:
-        strmDict = ParseStreamingUDP(msg)
-    type = input("Enter a 1 to build a server or 2 to make a client")
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    port = 7201
-    if type == '1':
-        # if a server, how do I receive the message?  I can print it...
-        reactor.listenUDP(port, Serve_UDP())
-        reactor.run()
-        strmDict = ParseStreamingUDP(msg)
-    elif type == '2':
-        ip = input('Enter IP Address (xxx.xxx.xxx): ')
-        if not valid_IP(ip):
-            print(f"{ip} is not a valid ip.  Exiting...")
-        protocol = Client_UDP(ip, port, reactor)
-        t = reactor.listenUDP(0, protocol)
-        msg = BuildStreamingUDP(0,'VEH_MHAFB1', strmDict)
-        l = task.LoopingCall(protocol.sendDatagram(msg))
-        l.start(1.0) # call every second
-        reactor.run()
-    else:
-        print(f"{type} is not a valid option. Exiting...")
-
-if __name__ == "__main__":
-    from pprint import pprint
-    msg = '#|1.0|VEH_MHAFB1|CMD|123|45|56837|S,0|A,0|B,100|G,1|V,0|X,0,1,0,0,0,,,|Y,0,0,0,0,0,,,|Z,0,0,0,,,,,|C,XXX'
-    print(msg)
-    strmDict = ParseStreamingUDP(msg)
-    print(strmDict)
-    print(BuildStreamingUDP(strmDict))
