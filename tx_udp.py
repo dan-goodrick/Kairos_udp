@@ -1,8 +1,75 @@
 import tkinter as tk
 from tkinter import font
 from collections import defaultdict
-from mStreamingUDP import BuildStreamingUDP
 import socket
+from datetime import date
+import time
+
+def get_checksum(string, num_digits=3):
+    return abs(hash(string)) % (10 ** num_digits)
+
+def BuildStreamingUDP(strmDict):
+    #   Streaming Protocol Sample
+    #   #|1.0|VEH_MHAFB1|CMD|123|45|56837|S,0|A,0|B,100|G,1|V,0|X,0,1,0,0,0,,,|Y,0,0,0,0,0,,,|Z,0,0,0,,,,,|C,XXX
+    #   0   #                   Header
+    #       |                   Delimiter
+    #   1   1.0                 Message Version
+    #   2   VEH_MHAFB1          Vehicle name
+    #   3   CMD                 Command Message to Robotic Asset
+    #   4   123                 Session ID
+    #   5   45                  Message Sequence
+    #   6   56837               Time stamp, ms from midnight
+    #   7   0                   Steering Angle, Steering Wheel Centered
+    #   8   0                   Throttle Percentage, 0%
+    #   9   100                 Brake Percentage, 100%
+    #   10  1                   Transmission state, 1=Park
+    #   11  0                   Vehicle speed in mph
+    #   12  Vehicle State       No Estop, No Pause, Enabled, Manual
+    #   13  Vehicle Sequence    Not Initiating or shutting down, No Start, No Steering Cal, No Shifting
+    #   14  Vehicle Mode        Progressive Steering, Progressive Braking, No Speed Control
+    #   15  XXX                 Default Checksum
+
+    TimeStamp = int((time.time() - time.mktime(date.today().timetuple()))*1000)
+    msg = []
+    msg.append('#') # Header
+    msg.append(strmDict['Version']) #Version
+    msg.append(strmDict['Name']) # Vehicle Name
+    msg.append(strmDict['Type']) # Message Type
+    msg.append(str(strmDict['Session'])) #Session ID
+    msg.append(str(strmDict['Sequence'])) #Message Number
+    msg.append(str(TimeStamp))
+    msg.append(','.join(['S', str(strmDict['Steering'])]))
+    msg.append(','.join(['A', str(strmDict['Throttle'])]))
+    msg.append(','.join(['B', str(strmDict['Brake'])]))
+    msg.append(','.join(['G', str(strmDict['Trans'])]))
+    msg.append(','.join(['V', str(strmDict['Velocity'])]))
+    msg.append(','.join(['X', str(strmDict['State_Estop']),
+                              str(strmDict['State_Paused']),
+                              str(strmDict['State_Manual']),
+                              str(strmDict['State_Enable']),
+                              str(strmDict['State_L1']),
+                              str(strmDict['State_L2']),
+                              str(strmDict['State_Motion']),
+                              str(strmDict['State_Reserved7'])]))
+    msg.append(','.join(['Y',str(strmDict['Process_Operation']),
+                             str(strmDict['Process_Shutdown']),
+                             str(strmDict['Process_Start']),
+                             str(strmDict['Process_SteeringCal']),
+                             str(strmDict['Process_TransShift']),
+                             str(strmDict['Process_Reserved5']),
+                             str(strmDict['Process_Reserved6']),
+                             str(strmDict['Process_Reserved7'])]))
+    msg.append(','.join(['Z',str(strmDict['Mode_ProgressiveSteeringDisable']),
+                             str(strmDict['Mode_ProgressiveBrakingDisable']),
+                             str(strmDict['Mode_VelocityControlEnable']),
+                             str(strmDict['Mode_Reserved3']),
+                             str(strmDict['Mode_Reserved4']),
+                             str(strmDict['Mode_Reserved5']),
+                             str(strmDict['Mode_Reserved6']),
+                             str(strmDict['Mode_Reserved7'])]))
+    chk = get_checksum('|'.join(msg))
+    msg.append(','.join(['C',str(chk)]))
+    return '|'.join(msg)
 
 def valid_IP(ip):
     segs = ip.split('.')
